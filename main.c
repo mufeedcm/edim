@@ -22,101 +22,177 @@
 #include <stdlib.h>
 #include <string.h>
 
+// terminal ui
+#include <termios.h>
+#include <unistd.h>
+
 typedef struct{
   char *data;
   int gap_start;
   int gap_end;
   int capacity;
-
-  char *filename;
-  int modified;
-}TextBuffer;
+}GapBuffer;
 
 typedef struct{
-  TextBuffer *buffers;
+  GapBuffer gb;
+  char *filename;
+  int modified;
+  int cursor_pos;
+}Buffer;
+
+typedef struct{
+  Buffer *buffers;
   int buffer_count;
   int current_buffer;
 }Editor;
 
-
-/* Buffer */
-void tb_init(TextBuffer *tb,int capacity){
-  tb->data= malloc(capacity);
-  if(!tb->data){
+// GapBuffer
+void gb_init(GapBuffer *gb,int capacity){
+  gb->data= malloc(capacity);
+  if(!gb->data){
     perror("malloc");
     exit(1);
   }
-  tb->capacity = capacity;
-  tb->gap_start = 0;
-  tb->gap_end = tb->capacity;
-  tb->filename = NULL;
-  tb->modified = 0;
+  gb->capacity = capacity;
+  gb->gap_start = 0;
+  gb->gap_end = gb->capacity;
 }
 
-void tb_resize(TextBuffer *tb){
-  int newcapacity = tb->capacity*2;
+void gb_resize(GapBuffer *gb){
+  int newcapacity = gb->capacity*2;
   char *new_data = malloc(newcapacity);
   if(!new_data){ 
     perror("malloc");
     exit(1);
   }
-  int left_side = tb->gap_start;
-  int right_side= tb->capacity-tb->gap_end;
-  memcpy(new_data, tb->data, left_side);
-  memcpy(new_data + ( newcapacity - right_side), tb->data+tb->gap_end, right_side);
-  free(tb->data);
-  tb->data = new_data;
-  tb->gap_end = newcapacity - right_side;
-  tb->capacity = newcapacity;
+  int left_side = gb->gap_start;
+  int right_side= gb->capacity-gb->gap_end;
+  memcpy(new_data, gb->data, left_side);
+  memcpy(new_data + ( newcapacity - right_side), gb->data+gb->gap_end, right_side);
+  free(gb->data);
+  gb->data = new_data;
+  gb->gap_end = newcapacity - right_side;
+  gb->capacity = newcapacity;
 }
 
-void tb_insert(TextBuffer *tb,char c){
-  if(tb->gap_start == tb->gap_end){
-    tb_resize(tb);
+void gb_insert(GapBuffer *gb,char c){
+  if(gb->gap_start == gb->gap_end){
+    gb_resize(gb);
   }
-  tb->data[tb->gap_start] = c;
-  tb->gap_start++;
-
-  tb->modified = 1;
+  gb->data[gb->gap_start] = c;
+  gb->gap_start++;
 }
 
-void tb_move_left(TextBuffer *tb){
-  if (tb->gap_start==0)  return ;
-  tb->gap_start--;
-  tb->gap_end--;
-  tb->data[tb->gap_end]=tb->data[tb->gap_start];
+void gb_delete(GapBuffer *gb){
+  if(gb->gap_start == 0) return ;
+  gb->gap_start--;
 }
 
-void tb_move_right(TextBuffer *tb){
-  if (tb->gap_end==tb->capacity)  return ;
-  tb->data[tb->gap_start]=tb->data[tb->gap_end];
-  tb->gap_start++;
-  tb->gap_end++;
+void gb_move_left(GapBuffer *gb){
+  if (gb->gap_start==0)  return ;
+  gb->gap_start--;
+  gb->gap_end--;
+  gb->data[gb->gap_end]=gb->data[gb->gap_start];
 }
 
-void tb_delete(TextBuffer *tb){
-  if(tb->gap_start == 0) return ;
-  tb->gap_start--;
-
-  tb->modified = 1;
-}
-
-int tb_length(TextBuffer *tb){
-  return  tb->capacity-(tb->gap_end-tb->gap_start);
+void gb_move_right(GapBuffer *gb){
+  if (gb->gap_end==gb->capacity)  return ;
+  gb->data[gb->gap_start]=gb->data[gb->gap_end];
+  gb->gap_start++;
+  gb->gap_end++;
 }
 
 
-void tb_print(TextBuffer *tb){
-  for(int i =0; i<tb->gap_start; i++) {
-    putchar(tb->data[i]);
+int gb_length(GapBuffer *gb){
+  return  gb->capacity-(gb->gap_end-gb->gap_start);
+}
+
+char gb_get(GapBuffer *gb,int pos){
+  if(pos<gb->gap_start){
+    return gb->data[pos];
+  }else{
+    return gb->data[pos+(gb->gap_end - gb->gap_start)];
   }
-  for(int i = tb->gap_end;i< tb->capacity;i++){
-    putchar(tb->data[i]);
-  }
-  putchar('\n');
 }
 
-void tb_load(TextBuffer *tb, const char *path){
+
+//Buffer
+void b_init(Buffer *b,int capacity){
+  gb_init(&b->gb, capacity);
+  b->filename = NULL;
+  b->modified = 0;
+  b->cursor_pos =0;
+}
+
+void b_free(Buffer *b){
+  free(b->gb.data);
+  free(b->filename);
+}
+
+void b_insert(Buffer *b,char c){
+  gb_insert(&b->gb, c);
+  b->cursor_pos++;
+  b->modified = 1;
+}
+
+void b_delete(Buffer *b){
+  if (b->cursor_pos==0) return;
+
+  gb_delete(&b->gb);
+  b->cursor_pos--;
+  b->modified = 1;
+}
+
+void b_move_left(Buffer *b){
+  if (b->cursor_pos==0) return;
+
+  gb_move_left(&b->gb);
+  b->cursor_pos--;
+}
+
+void b_move_right(Buffer *b){
+  if (b->cursor_pos>=gb_length(&b->gb)) return;
+  gb_move_right(&b->gb);
+  b->cursor_pos++;
+}
+void b_move_up(Buffer *b){
+  if(b->cursor_pos == 0) return;
+
+  int i = b->cursor_pos;
+  while(i>0 && gb_get(&b->gb,i-1)!='\n') i--;
+  int col = b->cursor_pos-i;
+  if(i==0) return;
+  i--;
+  int start = i;
+  while(start>0 && gb_get(&b->gb,start-1)!='\n') start--;
+  int len = i-start;
+  int target = start + (col < len ? col : len);
+
+  while(b->cursor_pos > target) b_move_left(b);
+  while(b->cursor_pos < target) b_move_right(b);
+}
+
+void b_move_down(Buffer *b){
+  int i = b->cursor_pos;
+  while(i>0 && gb_get(&b->gb,i-1)!='\n') i--;
+  int col = b->cursor_pos-i;
+
+  i = b->cursor_pos;
+  int total = gb_length(&b->gb);
+  while(i<total && gb_get(&b->gb,i)!='\n') i++;
+  if(i==total) return;
+  i++;
+
+  int start = i;
+  while(i<total && gb_get(&b->gb,i)!='\n') i++;
+  int len = i- start;
+  int target = start + (col < len ? col : len);
+
+  while(b->cursor_pos > target) b_move_left(b);
+  while(b->cursor_pos < target) b_move_right(b);
+}
+
+void b_load(Buffer *b, const char *path){
   FILE *f = fopen(path,"rb");
   if(!f){
     perror("fopen");
@@ -125,45 +201,48 @@ void tb_load(TextBuffer *tb, const char *path){
   fseek(f,0,SEEK_END);
   long size = ftell(f);
   rewind(f);
-  if(size>=tb->capacity){
-    free(tb->data);
-    tb->capacity = size*2;
-    tb->data= malloc(tb->capacity);
-    if(!tb->data){
+  if(size>=b->gb.capacity){
+    free(b->gb.data);
+    b->gb.capacity = size*2;
+    b->gb.data= malloc(b->gb.capacity);
+    if(!b->gb.data){
       perror("malloc");
       fclose(f);
       exit(1);
     }
   }
-  fread(tb->data, 1, size, f);
-  tb->gap_start = size;
-  tb->gap_end = tb->capacity;
-  tb->modified = 0;
+  fread(b->gb.data, 1, size, f);
+  b->gb.gap_start = size;
+  b->gb.gap_end = b->gb.capacity;
   fclose(f);
+  if (b->filename) free(b->filename);
+  b->filename = malloc(strlen(path)+1);
+  if(!b->filename){
+    perror("malloc");
+    exit(1);
+  }
+  strcpy(b->filename, path);
+  b->modified = 0;
+  b->cursor_pos = size;
 }
 
-void tb_save(TextBuffer *tb,const char *path){
+void b_save(Buffer *b,const char *path){
   FILE *f = fopen(path,"wb");
   if(!f){
     perror("fopen");
     return;
   }
-  size_t left = tb->gap_start;
-  size_t right = tb->capacity-tb->gap_end;
+  size_t left = b->gb.gap_start;
+  size_t right = b->gb.capacity-b->gb.gap_end;
 
-  fwrite(tb->data, 1,left ,f);
-  fwrite(tb->data+tb->gap_end,1,right,f);
+  fwrite(b->gb.data, 1,left ,f);
+  fwrite(b->gb.data+b->gb.gap_end,1,right,f);
 
   fclose(f);
 }
 
-void tb_free(TextBuffer *tb){
-  free(tb->data);
-  free(tb->filename);
-}
-
 /* Editor */
-TextBuffer *editor_current(Editor *ed){
+Buffer *editor_current(Editor *ed){
   if(ed->current_buffer<0) return NULL;
   return &ed->buffers[ed->current_buffer];
 }
@@ -176,89 +255,131 @@ void editor_init(Editor *ed){
 }
 
 void editor_new(Editor *ed){
-  TextBuffer *new_buffers = realloc(ed->buffers, sizeof(TextBuffer)*(ed->buffer_count+1));
+  Buffer *new_buffers = realloc(ed->buffers, sizeof(Buffer)*(ed->buffer_count+1));
   if(!new_buffers){
     perror("realloc");
     exit(1);
   }
   ed->buffers = new_buffers;
-  TextBuffer *tb = &ed->buffers[ed->buffer_count];
-  tb_init(tb, 16);
+  Buffer *b = &ed->buffers[ed->buffer_count];
+  b_init(b, 16);
 
   ed->current_buffer = ed->buffer_count;
   ed->buffer_count++;
 }
 
 void editor_open(Editor *ed,const char *path){
-  TextBuffer *new_buffers = realloc(ed->buffers, sizeof(TextBuffer)*(ed->buffer_count+1));
+  Buffer *new_buffers = realloc(ed->buffers, sizeof(Buffer)*(ed->buffer_count+1));
   if(!new_buffers){
     perror("realloc");
     exit(1);
   }
   ed->buffers = new_buffers;
-  TextBuffer *tb = &ed->buffers[ed->buffer_count];
+  Buffer *b = &ed->buffers[ed->buffer_count];
 
-  tb_init(tb, 16);
-  tb_load(tb,path);
+  b_init(b, 16);
+  b_load(b,path);
 
   ed->current_buffer = ed->buffer_count;
   ed->buffer_count++;
-
-  tb->filename = malloc(strlen(path)+1);
-  if(!tb->filename){
-    perror("malloc");
-    exit(1);
-  }
-  strcpy(tb->filename, path);
-
-
-  tb->modified = 0;
 }
 
 void editor_insert(Editor *ed,char c){
-  TextBuffer *tb = editor_current(ed);
-  if(!tb) return;
-  tb_insert(tb, c);
+  Buffer *b = editor_current(ed);
+  if(!b) return;
+  b_insert(b, c);
 }
 void editor_delete(Editor *ed){
-  TextBuffer *tb = editor_current(ed);
-  if(!tb) return;
-  tb_delete(tb);
+  Buffer *b = editor_current(ed);
+  if(!b) return;
+  b_delete(b);
 }
 void editor_move_left(Editor *ed){
-  TextBuffer *tb = editor_current(ed);
-  if(!tb) return;
-  tb_move_left(tb);
+  Buffer *b = editor_current(ed);
+  if(!b) return;
+  b_move_left(b);
 }
 void editor_move_right(Editor *ed){
-  TextBuffer *tb = editor_current(ed);
-  if(!tb) return;
-  tb_move_right(tb);
+  Buffer *b = editor_current(ed);
+  if(!b) return;
+  b_move_right(b);
+}
+
+void editor_move_up(Editor *ed){
+  Buffer *b = editor_current(ed);
+  if(!b) return;
+  b_move_up(b);
+}
+
+void editor_move_down(Editor *ed){
+  Buffer *b = editor_current(ed);
+  if(!b) return;
+  b_move_down(b);
 }
 
 void editor_save(Editor *ed){
-  TextBuffer *tb=editor_current(ed);
-  if(!tb) return;
-  if(!tb->filename){
-    tb->filename = malloc(strlen("out.txt")+1);
-    strcpy(tb->filename, "out.txt");
+  Buffer *b=editor_current(ed);
+  if(!b) return;
+  if(!b->filename){
+    b->filename = malloc(strlen("out.txt")+1);
+    strcpy(b->filename, "out.txt");
   }
-  tb_save(tb, tb->filename);
-  tb->modified = 0;
+  b_save(b, b->filename);
+  b->modified = 0;
 }
-void editor_print(Editor *ed){
-  TextBuffer *tb = editor_current(ed);
-  if(!tb) return;
-  tb_print(tb);
-}
+
 void editor_free(Editor *ed){
   for(int i = 0;i<ed->buffer_count;i++){
-    tb_free(&ed->buffers[i]);
+    b_free(&ed->buffers[i]);
   }
   free(ed->buffers);
 }
 
+struct termios orig_terminos;
+
+void disable_raw_mode(void){
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_terminos);
+}
+
+void enable_raw_mode(void){
+  tcgetattr(STDIN_FILENO, &orig_terminos);
+  atexit(disable_raw_mode);
+  struct termios raw = orig_terminos;
+  raw.c_lflag &= ~(ECHO | ICANON | ISIG);
+  raw.c_iflag &= ~(IXON);
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+void render(Editor *ed){
+  Buffer *b = editor_current(ed);
+  if(!b) return;
+
+  printf("\x1b[2J\x1b[H"); //clear the screen and move the cursor to top left
+  int len=gb_length(&b->gb);
+  int line =1;
+  printf("%d | ",line++);
+  for(int i =0; i<len; i++) {
+    char c =  gb_get(&b->gb,i);
+    putchar(c);
+    if( c == '\n') {
+      printf("%d | ",line++);
+    }
+  }
+  int row =0;
+  int col=0;
+  for(int i=0;i<b->cursor_pos; i++){
+    char c = gb_get(&b->gb, i);
+    if( c == '\n'){
+      row++;
+      col=0;
+    }else{
+      col++;
+    }
+  }
+  printf("\x1b[%d;%dH",row+1,col+5);
+}
+
 int main(int argc,char **argv){
+  enable_raw_mode();
   Editor ed;
 
   editor_init(&ed);
@@ -269,12 +390,28 @@ int main(int argc,char **argv){
   }
 
   while (1) {
-    printf("\x1b[2J\x1b[H"); //clear the screen and move the cursor to top left
-    editor_print(&ed);
-    printf("\nCtrl+D to quit\n");
+    render(&ed);
     int c = getchar();
+    // printf("%c = %d\n",c,c);
     if(c == EOF) break;
-    if(c == 127|| c ==8){
+    if(c == 17) break; 
+    else if(c == 27) {
+      int c1 = getchar();
+      if(c1!='[') continue; ;
+      int c2 = getchar();
+      switch (c2) {
+        case 'A' : editor_move_up(&ed); 
+                   break;
+        case 'B' : editor_move_down(&ed); 
+                   break;
+        case 'C' : editor_move_right(&ed); 
+                   break;
+        case 'D' : editor_move_left(&ed); 
+                   break;
+      }
+    }
+    else if(c == '\r') editor_insert(&ed, '\n');
+    else if(c == 127|| c ==8){
       editor_delete(&ed);
     }else{
       editor_insert(&ed, c);
