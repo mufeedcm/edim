@@ -1,4 +1,4 @@
-# MUEDIT
+# EDIM
 
 A minimal editor written in C.
 

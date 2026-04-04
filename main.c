@@ -1,5 +1,5 @@
 /*
- * muedit - a minimal editor written in C.
+ * edim - a minimal editor written in C.
  * Copyright (C) 2025 mufeedcm
  *
  * This program is free software: you can redistribute it and/or modify

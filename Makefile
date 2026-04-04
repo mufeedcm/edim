@@ -1,2 +1,2 @@
-muedit: main.c
-	gcc main.c -o muedit -Wall -Wextra -pedantic -std=c99
+edim: main.c
+	gcc main.c -o edim -Wall -Wextra -pedantic -std=c99
