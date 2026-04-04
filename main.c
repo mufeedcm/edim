@@ -25,6 +25,7 @@
 // terminal ui
 #include <termios.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 
 typedef struct{
   char *data;
@@ -115,6 +116,17 @@ char gb_get(GapBuffer *gb,int pos){
   }
 }
 
+int line_start(GapBuffer *gb,int pos){
+  while(pos>0&&gb_get(gb,pos-1)!='\n') pos--;
+  return pos;
+}
+
+int line_end(GapBuffer *gb,int pos){
+  int len = gb_length(gb);
+  while(pos< len&&gb_get(gb,pos)!='\n') pos++;
+  return pos;
+}
+
 
 //Buffer
 void b_init(Buffer *b,int capacity){
@@ -155,38 +167,38 @@ void b_move_right(Buffer *b){
   gb_move_right(&b->gb);
   b->cursor_pos++;
 }
+
 void b_move_up(Buffer *b){
   if(b->cursor_pos == 0) return;
+  int start = line_start(&b->gb,b->cursor_pos);
+  int col = b->cursor_pos- start;
 
-  int i = b->cursor_pos;
-  while(i>0 && gb_get(&b->gb,i-1)!='\n') i--;
-  int col = b->cursor_pos-i;
-  if(i==0) return;
-  i--;
-  int start = i;
-  while(start>0 && gb_get(&b->gb,start-1)!='\n') start--;
-  int len = i-start;
-  int target = start + (col < len ? col : len);
+  if(start==0) return;
+  int prev_end = start-1;
+  int prev_start= line_start(&b->gb, prev_end);
+  int prev_len = prev_end- prev_start;
+
+  int target = prev_start + (col < prev_len ? col : prev_len);
 
   while(b->cursor_pos > target) b_move_left(b);
   while(b->cursor_pos < target) b_move_right(b);
 }
 
 void b_move_down(Buffer *b){
-  int i = b->cursor_pos;
-  while(i>0 && gb_get(&b->gb,i-1)!='\n') i--;
-  int col = b->cursor_pos-i;
+  int len = gb_length(&b->gb);
 
-  i = b->cursor_pos;
-  int total = gb_length(&b->gb);
-  while(i<total && gb_get(&b->gb,i)!='\n') i++;
-  if(i==total) return;
-  i++;
+  int start = line_start(&b->gb,b->cursor_pos);
+  int col = b->cursor_pos- start;
 
-  int start = i;
-  while(i<total && gb_get(&b->gb,i)!='\n') i++;
-  int len = i- start;
-  int target = start + (col < len ? col : len);
+  int end = line_end(&b->gb, b->cursor_pos);
+  if(end==len) return;
+
+  int next_start = end+1;
+  int next_end = line_end(&b->gb, next_start);
+
+  int next_len = next_end - next_start;
+
+  int target = next_start + (col < next_len ? col : next_len);
 
   while(b->cursor_pos > target) b_move_left(b);
   while(b->cursor_pos < target) b_move_right(b);
@@ -253,7 +265,6 @@ void editor_init(Editor *ed){
   ed->current_buffer = -1;
 
 }
-
 void editor_new(Editor *ed){
   Buffer *new_buffers = realloc(ed->buffers, sizeof(Buffer)*(ed->buffer_count+1));
   if(!new_buffers){
@@ -289,6 +300,13 @@ void editor_insert(Editor *ed,char c){
   if(!b) return;
   b_insert(b, c);
 }
+
+void editor_insert_str(Editor *ed,char *s){
+  while(*s){
+    editor_insert(ed, *s++);
+  }
+}
+
 void editor_delete(Editor *ed){
   Buffer *b = editor_current(ed);
   if(!b) return;
@@ -335,8 +353,24 @@ void editor_free(Editor *ed){
   free(ed->buffers);
 }
 
-struct termios orig_terminos;
+int editor_cursor(Editor *ed){
+  Buffer *b=editor_current(ed);
+  return b ? b->cursor_pos :0;
+}
 
+int editor_length(Editor *ed){
+  Buffer *b=editor_current(ed);
+  return b ? gb_length(&b->gb) :0;
+}
+
+int editor_get(Editor *ed,int pos){
+  Buffer *b=editor_current(ed);
+  return b ? gb_get(&b->gb,pos) :0;
+}
+
+
+// terminal
+struct termios orig_terminos;
 void disable_raw_mode(void){
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_terminos);
 }
@@ -349,33 +383,67 @@ void enable_raw_mode(void){
   raw.c_iflag &= ~(IXON);
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
+void get_window_size(int *rows,int *cols){
+  struct winsize ws;
+
+  if(ioctl(STDIN_FILENO, TIOCGWINSZ,&ws) == -1 || ws.ws_col == 0){
+    *rows=24;
+    *cols= 80;
+  }else{
+    *rows = ws.ws_row;
+    *cols = ws.ws_col;
+  }
+}
+
 void render(Editor *ed){
   Buffer *b = editor_current(ed);
   if(!b) return;
 
   printf("\x1b[2J\x1b[H"); //clear the screen and move the cursor to top left
-  int len=gb_length(&b->gb);
+  int len=editor_length(ed);
+
+  int rows,cols;
+  get_window_size(&rows, &cols);
+
+  int gutter_width  = 6;
+
   int line =1;
-  printf("%d | ",line++);
+  int row =0, col=0;
+
+  printf("%d   | ",line++);
   for(int i =0; i<len; i++) {
-    char c =  gb_get(&b->gb,i);
-    putchar(c);
+    char c =  editor_get(ed,i);
     if( c == '\n') {
-      printf("%d | ",line++);
+      row++;
+      col = 0;
+      printf("\n%d   | ",line++);
+      continue;
     }
-  }
-  int row =0;
-  int col=0;
-  for(int i=0;i<b->cursor_pos; i++){
-    char c = gb_get(&b->gb, i);
-    if( c == '\n'){
+    if(col>=(cols-gutter_width)){
       row++;
       col=0;
-    }else{
-      col++;
+      printf("\n    |  ");
     }
+    putchar(c);
+    col++;
   }
-  printf("\x1b[%d;%dH",row+1,col+5);
+  int crow=0,ccol=0;
+  int cursor = editor_cursor(ed);
+
+ for(int i=0;i<cursor; i++){
+    char c = editor_get(ed,i);
+    if( c == '\n'){
+      crow++;
+      ccol=0;
+      continue;
+    }
+    if(ccol>=cols-gutter_width){
+      crow++;
+      ccol=0;
+    }
+    ccol++;
+  }
+  printf("\x1b[%d;%dH",crow+1,ccol+(gutter_width));
 }
 
 int main(int argc,char **argv){
