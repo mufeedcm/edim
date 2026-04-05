@@ -102,6 +102,9 @@ int main(int argc,char **argv){
           case SDLK_BACKSPACE:
             editor_delete(&ed);
             break;
+          case SDLK_TAB:
+            editor_insert_str(&ed, "    ");
+            break;
           case SDLK_RIGHT:
             editor_move_right(&ed);
             break;
@@ -132,15 +135,16 @@ int main(int argc,char **argv){
 
     for(int i=0;i<len;i++){
       char c = editor_get(&ed, i);
+
+      if(i==cursor){
+        cx=x;
+        cy=y;
+      }
       if(c =='\n'||col>=max_cols){
         y+=char_h;
         x = margin;
         col =0;
         if(c == '\n') continue;
-      }
-      if(i==cursor){
-        cx=x;
-        cy=y;
       }
       char str[2] = {c,'\0'};
       drawText(renderer, fonts.normal,str,x,y, WHITE);
