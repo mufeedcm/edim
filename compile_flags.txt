@@ -1,0 +1,4 @@
+-I/opt/homebrew/include
+-L/opt/homebrew/lib
+-LSDL3
+-LSDL3_ttf

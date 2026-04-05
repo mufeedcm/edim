@@ -1,51 +1,7 @@
-/*
- * edim - a minimal editor written in C.
- * Copyright (C) 2025 mufeedcm
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>. 
- */
-
-
-/* includes */
+#include "editor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-// terminal ui
-#include <termios.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-
-typedef struct{
-  char *data;
-  int gap_start;
-  int gap_end;
-  int capacity;
-}GapBuffer;
-
-typedef struct{
-  GapBuffer gb;
-  char *filename;
-  int modified;
-  int cursor_pos;
-}Buffer;
-
-typedef struct{
-  Buffer *buffers;
-  int buffer_count;
-  int current_buffer;
-}Editor;
 
 // GapBuffer
 void gb_init(GapBuffer *gb,int capacity){
@@ -254,7 +210,7 @@ void b_save(Buffer *b,const char *path){
 }
 
 /* Editor */
-Buffer *editor_current(Editor *ed){
+static Buffer *editor_current(Editor *ed){
   if(ed->current_buffer<0) return NULL;
   return &ed->buffers[ed->current_buffer];
 }
@@ -366,126 +322,4 @@ int editor_length(Editor *ed){
 int editor_get(Editor *ed,int pos){
   Buffer *b=editor_current(ed);
   return b ? gb_get(&b->gb,pos) :0;
-}
-
-
-// terminal
-struct termios orig_terminos;
-void disable_raw_mode(void){
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_terminos);
-}
-
-void enable_raw_mode(void){
-  tcgetattr(STDIN_FILENO, &orig_terminos);
-  atexit(disable_raw_mode);
-  struct termios raw = orig_terminos;
-  raw.c_lflag &= ~(ECHO | ICANON | ISIG);
-  raw.c_iflag &= ~(IXON);
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
-}
-void get_window_size(int *rows,int *cols){
-  struct winsize ws;
-
-  if(ioctl(STDIN_FILENO, TIOCGWINSZ,&ws) == -1 || ws.ws_col == 0){
-    *rows=24;
-    *cols= 80;
-  }else{
-    *rows = ws.ws_row;
-    *cols = ws.ws_col;
-  }
-}
-
-void render(Editor *ed){
-  Buffer *b = editor_current(ed);
-  if(!b) return;
-
-  printf("\x1b[2J\x1b[H"); //clear the screen and move the cursor to top left
-  int len=editor_length(ed);
-
-  int rows,cols;
-  get_window_size(&rows, &cols);
-
-  int gutter_width  = 6;
-
-  int line =1;
-  int row =0, col=0;
-
-  printf("%d   | ",line++);
-  for(int i =0; i<len; i++) {
-    char c =  editor_get(ed,i);
-    if( c == '\n') {
-      row++;
-      col = 0;
-      printf("\n%d   | ",line++);
-      continue;
-    }
-    if(col>=(cols-gutter_width)){
-      row++;
-      col=0;
-      printf("\n    |  ");
-    }
-    putchar(c);
-    col++;
-  }
-  int crow=0,ccol=0;
-  int cursor = editor_cursor(ed);
-
- for(int i=0;i<cursor; i++){
-    char c = editor_get(ed,i);
-    if( c == '\n'){
-      crow++;
-      ccol=0;
-      continue;
-    }
-    if(ccol>=cols-gutter_width){
-      crow++;
-      ccol=0;
-    }
-    ccol++;
-  }
-  printf("\x1b[%d;%dH",crow+1,ccol+(gutter_width));
-}
-
-int main(int argc,char **argv){
-  enable_raw_mode();
-  Editor ed;
-
-  editor_init(&ed);
-  if(argc>1){
-    editor_open(&ed, argv[1]);
-  }else{
-    editor_new(&ed);
-  }
-
-  while (1) {
-    render(&ed);
-    int c = getchar();
-    // printf("%c = %d\n",c,c);
-    if(c == EOF) break;
-    if(c == 17) break; 
-    else if(c == 27) {
-      int c1 = getchar();
-      if(c1!='[') continue; ;
-      int c2 = getchar();
-      switch (c2) {
-        case 'A' : editor_move_up(&ed); 
-                   break;
-        case 'B' : editor_move_down(&ed); 
-                   break;
-        case 'C' : editor_move_right(&ed); 
-                   break;
-        case 'D' : editor_move_left(&ed); 
-                   break;
-      }
-    }
-    else if(c == '\r') editor_insert(&ed, '\n');
-    else if(c == 127|| c ==8){
-      editor_delete(&ed);
-    }else{
-      editor_insert(&ed, c);
-    }
-  }
-  editor_save(&ed);
-  editor_free(&ed);
-  return 0;
 }
