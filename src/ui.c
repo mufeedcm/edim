@@ -26,11 +26,12 @@ static const Clay_Color GREEN      = (Clay_Color) {0,255,0,255};
 static Clay_Dimensions measure_text(Clay_StringSlice text,Clay_TextElementConfig *config,void *userData){
   TTF_Font *f = userData;
   int w,h;
-
   TTF_SetFontSize(f,config->fontSize);
   TTF_GetStringSize(f,text.chars,text.length,&w,&h);
   return (Clay_Dimensions){(float)w,(float)h};
 }
+
+static int editor_scroll_y=0;
 
 
 void ui_init(SDL_Renderer *renderer, int width, int height){
@@ -66,6 +67,8 @@ void ui_handle_event(SDL_Event *e){
       break;
     case SDL_EVENT_MOUSE_WHEEL:
       Clay_UpdateScrollContainers(true,(Clay_Vector2){e->wheel.x,e->wheel.y}, 0.01f);
+      editor_scroll_y -= e->wheel.y *20;
+      if(editor_scroll_y <0) editor_scroll_y =0;
       break;
   }
 }
@@ -77,9 +80,10 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
   int len= editor_length(ed);
   int col=0;
   int max_cols = (width/char_w)-2;
-  int x = x_offset+margin,y=y_offset+margin;
-  int cx=x_offset+margin,cy=y_offset+margin;
+  int x = x_offset+margin,y=(y_offset+margin)-editor_scroll_y;
+  int cx=x_offset+margin,cy=(y_offset+margin)-editor_scroll_y;
   int cursor = editor_cursor(ed);
+  SDL_SetRenderClipRect(renderer,&(SDL_Rect){x_offset,y_offset,width,height});
 
     for(int i=0;i<len;i++){
       char c = editor_get(ed, i);
@@ -114,7 +118,7 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
       SDL_SetRenderDrawColor(renderer, WHITE.r,WHITE.g,WHITE.b,WHITE.a);
       SDL_RenderFillRect(renderer, &cur);
     }
-
+    SDL_SetRenderClipRect(renderer, NULL);
 }
 
 void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
@@ -164,8 +168,6 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                .textColor = WHITE 
             });
            
-
-
            bool file_list_visible =
              Clay_PointerOver(Clay_GetElementId(CLAY_STRING("file_btn"))) 
              ||
