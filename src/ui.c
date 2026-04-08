@@ -2,8 +2,10 @@
 #include "editor.h"
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #define CLAY_IMPLEMENTATION
 #include "clay/clay.h"
@@ -77,13 +79,25 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
   int char_w = 10,char_h = 18;
   int margin =10;
 
+  int gutter = 30;
+  int line =1;
+
   int len= editor_length(ed);
   int col=0;
-  int max_cols = (width/char_w)-2;
-  int x = x_offset+margin,y=(y_offset+margin)-editor_scroll_y;
-  int cx=x_offset+margin,cy=(y_offset+margin)-editor_scroll_y;
+  int max_cols = (width/char_w)-5;
+  int x = x_offset+gutter+margin,y=(y_offset+margin)-editor_scroll_y;
+  int cx=x_offset+gutter+margin,cy=(y_offset+margin)-editor_scroll_y;
   int cursor = editor_cursor(ed);
   SDL_SetRenderClipRect(renderer,&(SDL_Rect){x_offset,y_offset,width,height});
+  
+  char num[16];
+  snprintf(num, sizeof(num),"%d",line);
+  SDL_Surface *line_surface = TTF_RenderText_Blended(font, num,strlen(num), (SDL_Color){GRAY5.r,GRAY5.g,GRAY5.b,GRAY5.a});
+  SDL_Texture *line_texture = SDL_CreateTextureFromSurface(renderer, line_surface);
+  SDL_FRect line_dst = {x_offset+5,y,line_surface->w,line_surface->h};
+  SDL_DestroySurface(line_surface);
+  SDL_RenderTexture(renderer, line_texture, NULL, &line_dst);
+  SDL_DestroyTexture(line_texture);
 
     for(int i=0;i<len;i++){
       char c = editor_get(ed, i);
@@ -94,8 +108,19 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
       }
       if(c =='\n'||col>=max_cols){
         y+=char_h;
-        x = x_offset+margin;
+        x = x_offset+gutter+margin;
         col =0;
+        if(c=='\n'){
+          line++;
+          char num[16];
+          snprintf(num, sizeof(num),"%d",line);
+          SDL_Surface *line_surface = TTF_RenderText_Blended(font, num,strlen(num), (SDL_Color){GRAY5.r,GRAY5.g,GRAY5.b,GRAY5.a});
+          SDL_Texture *line_texture = SDL_CreateTextureFromSurface(renderer, line_surface);
+          SDL_FRect line_dst = {x_offset+5,y,line_surface->w,line_surface->h};
+          SDL_DestroySurface(line_surface);
+          SDL_RenderTexture(renderer, line_texture, NULL, &line_dst);
+          SDL_DestroyTexture(line_texture);
+        }
         if(c == '\n') continue;
       }
       char str[2] = {c,'\0'};
