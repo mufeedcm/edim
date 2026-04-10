@@ -178,9 +178,28 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
              .height = CLAY_SIZING_FIT(),
              }
            },
-           .backgroundColor = BLACK,
+           .backgroundColor = GRAY1,
        })
        {
+
+         CLAY(CLAY_ID("LOGO"),{
+             .layout = {
+              .sizing = {
+               .width = CLAY_SIZING_FIT(),
+               .height = CLAY_SIZING_FIT(),
+               },
+               .padding = {10,10,5,5}
+             },
+             .backgroundColor = GRAY1,
+         })
+         {
+           CLAY_TEXT(CLAY_STRING("EDIM"),{
+               .fontId = 0,
+               .fontSize = 14,
+               .textColor = WHITE 
+            });
+         }
+
          CLAY(CLAY_ID("file_btn"),{
              .layout = {
               .sizing = {
@@ -189,7 +208,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                },
                .padding = {10,10,5,5}
              },
-             .backgroundColor = GRAY3 
+             .backgroundColor = GRAY4 
          })
          {
            CLAY_TEXT(CLAY_STRING("File"),{
@@ -211,7 +230,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                  .attachPoints = {
                  .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM,
                  },
-                 .offset = {5,5},
+                 .offset = {2,2},
                },
                .layout = {
                  .layoutDirection = CLAY_TOP_TO_BOTTOM,
@@ -223,11 +242,11 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                  .childGap = 16,
                },
                .border = {
-                 .color = WHITE,
+                 .color = GRAY4,
                  .width = {1,1,1,1},
                },
                .cornerRadius = {5,5,5,5},
-               .backgroundColor = GRAY3
+               .backgroundColor = GRAY5
              }){
             CLAY(CLAY_ID("new_btn"),{
                 .layout = {
@@ -272,8 +291,8 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
              .padding = {5,5,5,5},
            },
            .border = {
-             .color = WHITE,
-             .width = {.top =1},
+             .color = GRAY3,
+             .width = {.top =1,.bottom=1},
            },
            .backgroundColor = GRAY1 
        })
@@ -287,7 +306,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                    .width = CLAY_SIZING_FIT(),
                    .height = CLAY_SIZING_FIT(),
                  },
-               .padding = {10,10,5,5},
+               .padding = {5,5,5,5},
                },
                .cornerRadius = {5,5,5,5},
                .backgroundColor = bg,
