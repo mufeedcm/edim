@@ -323,3 +323,23 @@ int editor_get(Editor *ed,int pos){
   Buffer *b=editor_current(ed);
   return b ? gb_get(&b->gb,pos) :0;
 }
+
+int editor_buf_count(Editor *ed){
+  return ed->buffer_count;
+}
+
+int editor_curr_index(Editor *ed){
+  return ed->current_buffer;
+}
+
+const char *editor_buf_name(Editor *ed, int index){
+  if(index < 0 || index>= ed->buffer_count) return "";
+  Buffer *b = &ed->buffers[index];
+  return b->filename ? b->filename : "untitled";
+}
+
+void editor_switch(Editor *ed, int index){
+  if(index>=0 && index < ed->buffer_count){
+    ed->current_buffer = index;
+  }
+}

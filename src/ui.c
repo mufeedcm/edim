@@ -34,6 +34,8 @@ static Clay_Dimensions measure_text(Clay_StringSlice text,Clay_TextElementConfig
 }
 
 static int editor_scroll_y=0;
+static bool mouse_clicked = false;
+static bool file_menu_open = false;
 
 
 void ui_init(SDL_Renderer *renderer, int width, int height){
@@ -62,6 +64,7 @@ void ui_handle_event(SDL_Event *e){
       Clay_SetPointerState((Clay_Vector2){e->motion.x,e->motion.y}, e->motion.state & SDL_BUTTON_LMASK);
       break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
+      mouse_clicked = true;
       Clay_SetPointerState((Clay_Vector2){e->button.x,e->button.y}, true);
       break;
     case SDL_EVENT_MOUSE_BUTTON_UP:
@@ -76,6 +79,7 @@ void ui_handle_event(SDL_Event *e){
 }
 
 void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,int width, int height){
+  if(ed->buffer_count!=0){
   int char_w = 10,char_h = 18;
   int margin =10;
 
@@ -144,6 +148,7 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
       SDL_RenderFillRect(renderer, &cur);
     }
     SDL_SetRenderClipRect(renderer, NULL);
+  }
 }
 
 void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
@@ -173,7 +178,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
              .height = CLAY_SIZING_FIT(),
              }
            },
-           .backgroundColor = GRAY1 
+           .backgroundColor = BLACK,
        })
        {
          CLAY(CLAY_ID("file_btn"),{
@@ -193,12 +198,12 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                .textColor = WHITE 
             });
            
-           bool file_list_visible =
-             Clay_PointerOver(Clay_GetElementId(CLAY_STRING("file_btn"))) 
-             ||
-             Clay_PointerOver(Clay_GetElementId(CLAY_STRING("file_list")));
+           if(Clay_PointerOver(CLAY_ID("file_btn")) && mouse_clicked){
+             file_menu_open = !file_menu_open;
+           }
 
-           if(file_list_visible){
+
+           if(file_menu_open){
 
            CLAY(CLAY_ID("file_list"),{
                .floating = {
@@ -206,7 +211,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                  .attachPoints = {
                  .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM,
                  },
-                 // .offset = {5,5}
+                 .offset = {5,5},
                },
                .layout = {
                  .layoutDirection = CLAY_TOP_TO_BOTTOM,
@@ -217,33 +222,95 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                  .padding = {10,10,10,10},
                  .childGap = 16,
                },
+               .border = {
+                 .color = WHITE,
+                 .width = {1,1,1,1},
+               },
                .cornerRadius = {5,5,5,5},
                .backgroundColor = GRAY3
              }){
-// //          Clicked example
-// ❯           bool btn_clicked =
-//             Clay_PointerOver(Clay_GetElementId(CLAY_STRING("_btn")))
-//             &&
-//             pointer.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME;
+            CLAY(CLAY_ID("new_btn"),{
+                .layout = {
+                 .sizing = layoutExpand,
+                 },
+                }){
              CLAY_TEXT(CLAY_STRING("New"),{
                  .fontId = 0,
                  .fontSize = 14,
                  .textColor = WHITE 
                  });
-             CLAY_TEXT(CLAY_STRING("Open"),{
-                 .fontId = 0,
-                 .fontSize = 14,
-                 .textColor = WHITE
-                 });
-             CLAY_TEXT(CLAY_STRING("Save"),{
-                 .fontId = 0,
-                 .fontSize = 14,
-                 .textColor = WHITE 
-                 });
+            }
+            if(Clay_PointerOver(CLAY_ID("new_btn")) && mouse_clicked){
+              editor_new(ed);
+             file_menu_open = !file_menu_open;
+            }
+            
+             // CLAY_TEXT(CLAY_STRING("Open"),{
+             //     .fontId = 0,
+             //     .fontSize = 14,
+             //     .textColor = WHITE
+             //     });
+             // CLAY_TEXT(CLAY_STRING("Save"),{
+             //     .fontId = 0,
+             //     .fontSize = 14,
+             //     .textColor = WHITE 
+             //     });
            }
            }
          }
 
+         
+       }
+       CLAY(CLAY_ID("tabs"),{
+           .layout = {
+           .layoutDirection = CLAY_LEFT_TO_RIGHT,
+            .sizing = {
+             .width = CLAY_SIZING_GROW(0),
+             .height = CLAY_SIZING_FIT(),
+             },
+             .childGap = 10,
+             .padding = {5,5,5,5},
+           },
+           .border = {
+             .color = WHITE,
+             .width = {.top =1},
+           },
+           .backgroundColor = GRAY1 
+       })
+       {
+         for ( int i =0;i<editor_buf_count(ed);i++){
+           Clay_Color bg = ( i == editor_curr_index(ed)) ? GRAY4 : GRAY2;
+          const char *name = editor_buf_name(ed,i);
+           CLAY(CLAY_IDI("tab",i),{
+               .layout = {
+                 .sizing = {
+                   .width = CLAY_SIZING_FIT(),
+                   .height = CLAY_SIZING_FIT(),
+                 },
+               .padding = {10,10,5,5},
+               },
+               .cornerRadius = {5,5,5,5},
+               .backgroundColor = bg,
+               }){
+             Clay_String tab_name= {
+                 .length = (int)strlen(name),
+                 .chars = name,
+             };
+             CLAY_TEXT(tab_name,{
+                 .fontId = 0,
+                 .fontSize = 14,
+                 .textColor = WHITE 
+                 });
+             bool tab_clicked =
+               Clay_PointerOver((CLAY_IDI("tab", i))) 
+               && 
+               pointer.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME;
+
+             if(tab_clicked){
+               editor_switch(ed, i);
+             }
+           }
+         }
        }
        CLAY(CLAY_ID("editor"),{
            .layout = {
@@ -264,5 +331,5 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
     );
   }
   SDL_Clay_RenderClayCommands(&renderData, &cmds);
-
+  mouse_clicked = false;
 }

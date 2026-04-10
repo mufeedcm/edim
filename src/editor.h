@@ -36,5 +36,9 @@ void editor_free(Editor *ed);
 int editor_cursor(Editor *ed);
 int editor_length(Editor *ed);
 int editor_get(Editor *ed,int pos);
+int editor_buf_count(Editor *ed);
+int editor_curr_index(Editor *ed);
+const char *editor_buf_name(Editor *ed, int index);
+void editor_switch(Editor *ed, int index);
 
 #endif
