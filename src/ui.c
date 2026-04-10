@@ -314,11 +314,46 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
        }
        CLAY(CLAY_ID("editor"),{
            .layout = {
-            .sizing = layoutExpand
+            .sizing = layoutExpand,
            }
        })
-       {}
+       {
+         if(editor_buf_count(ed) == 0){
+       CLAY(CLAY_ID("greeter"),{
+           .layout = {
+            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+            .sizing = layoutExpand,
+            .childAlignment = {CLAY_ALIGN_X_CENTER,CLAY_ALIGN_Y_CENTER},
+           }
+       }){
+         const char *logo = 
+                   " ▄▄▄▄▄▄     █    ▀          \n"
+                   " █       ▄▄▄█  ▄▄▄    ▄▄▄▄▄ \n"
+                   " █▄▄▄▄▄ █▀ ▀█    █    █ █ █ \n"
+                   " █      █   █    █    █ █ █ \n"
+                   " █▄▄▄▄▄ ▀█▄██  ▄▄█▄▄  █ █ █ \n"
+                   "                            \n";
+              Clay_String logo_string = {
+                 .chars = logo,
+                 .length = (int)strlen(logo),
+               };
+               CLAY_TEXT(logo_string,{
+                   .fontId = 0,
+                   .fontSize = 14,
+                   .textColor = WHITE 
+                   });
+
+               CLAY_TEXT(CLAY_STRING("A minimal editor written in C"),{
+                   .fontId = 0,
+                   .fontSize = 14,
+                   .textColor = WHITE 
+                   });
+           }
+         }
+       }
   }
+                            
+                            
   Clay_RenderCommandArray cmds = Clay_EndLayout(0.016f);
   Clay_ElementData editorData = Clay_GetElementData(CLAY_ID("editor"));
   if(editorData.found){

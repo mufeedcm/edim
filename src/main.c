@@ -57,7 +57,7 @@ int main(int argc,char **argv){
   int width, height;
   Editor ed;
   editor_init(&ed);
-  editor_new(&ed);
+  // editor_new(&ed);
   int running =1;
   while (running) {
     SDL_GetWindowSize(window, &width, &height);
