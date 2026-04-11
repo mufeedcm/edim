@@ -302,6 +302,30 @@ void editor_save(Editor *ed){
   b->modified = 0;
 }
 
+void editor_close(Editor *ed){
+  if(ed->buffer_count<=0) return;
+  int curr_idx = ed->current_buffer;
+  b_free(&ed->buffers[curr_idx]);
+
+  for(int i = curr_idx; i < ed->buffer_count -1;i++){
+    ed->buffers[i] = ed->buffers[i+1];
+  }
+  ed->buffer_count--;
+  if(ed->buffer_count == 0){
+    free(ed->buffers);
+    ed->buffers = NULL;
+    ed->current_buffer  = -1;
+    return;
+  }
+
+
+  if(curr_idx >=ed->buffer_count){
+    ed->current_buffer = ed->buffer_count -1;
+  }else{
+    ed->current_buffer = curr_idx;
+  }
+}
+
 void editor_free(Editor *ed){
   for(int i = 0;i<ed->buffer_count;i++){
     b_free(&ed->buffers[i]);

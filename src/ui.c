@@ -263,7 +263,21 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
               editor_new(ed);
              file_menu_open = !file_menu_open;
             }
-            
+            CLAY(CLAY_ID("close_btn"),{
+                .layout = {
+                 .sizing = layoutExpand,
+                 },
+                }){
+             CLAY_TEXT(CLAY_STRING("Close"),{
+                 .fontId = 0,
+                 .fontSize = 14,
+                 .textColor = WHITE 
+                 });
+            }
+            if(Clay_PointerOver(CLAY_ID("close_btn")) && mouse_clicked){
+              editor_close(ed);
+             file_menu_open = !file_menu_open;
+            }
              // CLAY_TEXT(CLAY_STRING("Open"),{
              //     .fontId = 0,
              //     .fontSize = 14,
@@ -302,31 +316,69 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
           const char *name = editor_buf_name(ed,i);
            CLAY(CLAY_IDI("tab",i),{
                .layout = {
+               .layoutDirection = CLAY_LEFT_TO_RIGHT,
                  .sizing = {
                    .width = CLAY_SIZING_FIT(),
                    .height = CLAY_SIZING_FIT(),
                  },
-               .padding = {5,5,5,5},
+               .padding = {10,10,5,5},
+               .childGap = 10,
                },
                .cornerRadius = {5,5,5,5},
                .backgroundColor = bg,
                }){
-             Clay_String tab_name= {
-                 .length = (int)strlen(name),
-                 .chars = name,
-             };
-             CLAY_TEXT(tab_name,{
-                 .fontId = 0,
-                 .fontSize = 14,
-                 .textColor = WHITE 
-                 });
-             bool tab_clicked =
-               Clay_PointerOver((CLAY_IDI("tab", i))) 
-               && 
-               pointer.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME;
 
-             if(tab_clicked){
+           CLAY(CLAY_IDI("tab_name_container",i),{
+               .layout = {
+                 .sizing = {
+                   .width = CLAY_SIZING_FIT(),
+                   .height = CLAY_SIZING_FIT(),
+                 },
+               },
+               }){
+               Clay_String tab_name= {
+                   .length = (int)strlen(name),
+                   .chars = name,
+               };
+               CLAY_TEXT(tab_name,{
+                   .fontId = 0,
+                   .fontSize = 14,
+                   .textColor = WHITE 
+                   });
+             }
+             bool tab_name_clicked =
+               Clay_PointerOver((CLAY_IDI("tab_name_container", i))) 
+               && 
+               mouse_clicked;
+
+             if(tab_name_clicked){
                editor_switch(ed, i);
+             }
+
+           CLAY(CLAY_IDI("tab_close_container",i),{
+               .layout = {
+                 .sizing = {
+                   .width = CLAY_SIZING_FIT(),
+                   .height = CLAY_SIZING_FIT(),
+                 },
+               },
+               }){
+               CLAY_TEXT(CLAY_STRING("x"),{
+                   .fontId = 0,
+                   .fontSize = 14,
+                   .textColor = RED 
+                   });
+             }
+             bool tab_close_clicked =
+               Clay_PointerOver((CLAY_IDI("tab_close_container", i))) 
+               && 
+               mouse_clicked;
+
+             if(tab_close_clicked){
+               editor_switch(ed, i);
+               editor_close(ed);
+               mouse_clicked = false;
+               return;
              }
            }
          }

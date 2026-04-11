@@ -32,6 +32,7 @@ void editor_move_right(Editor *ed);
 void editor_move_up(Editor *ed);
 void editor_move_down(Editor *ed);
 void editor_save(Editor *ed);
+void editor_close(Editor *ed);
 void editor_free(Editor *ed);
 int editor_cursor(Editor *ed);
 int editor_length(Editor *ed);
