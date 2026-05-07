@@ -224,71 +224,74 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
 
            if(file_menu_open){
 
-           CLAY(CLAY_ID("file_list"),{
-               .floating = {
-                 .attachTo = CLAY_ATTACH_TO_PARENT,
-                 .attachPoints = {
-                 .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM,
+             CLAY(CLAY_ID("file_list"),{
+                 .floating = {
+                   .attachTo = CLAY_ATTACH_TO_PARENT,
+                   .attachPoints = {
+                   .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM,
+                   },
+                   .offset = {2,2},
                  },
-                 .offset = {2,2},
-               },
-               .layout = {
-                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                 .sizing = {
-                   .width = CLAY_SIZING_FIXED(120),
-                   .height = CLAY_SIZING_FIT()
+                 .layout = {
+                   .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                   .sizing = {
+                     .width = CLAY_SIZING_FIXED(120),
+                     .height = CLAY_SIZING_FIT()
+                   },
+                   .padding = {10,10,10,10},
+                   .childGap = 16,
                  },
-                 .padding = {10,10,10,10},
-                 .childGap = 16,
-               },
-               .border = {
-                 .color = GRAY4,
-                 .width = {1,1,1,1},
-               },
-               .cornerRadius = {5,5,5,5},
-               .backgroundColor = GRAY5
-             }){
-            CLAY(CLAY_ID("new_btn"),{
-                .layout = {
-                 .sizing = layoutExpand,
+                 .border = {
+                   .color = GRAY4,
+                   .width = {1,1,1,1},
                  },
-                }){
-             CLAY_TEXT(CLAY_STRING("New"),{
-                 .fontId = 0,
-                 .fontSize = 14,
-                 .textColor = WHITE 
-                 });
-            }
-            if(Clay_PointerOver(CLAY_ID("new_btn")) && mouse_clicked){
-              editor_new(ed);
-             file_menu_open = !file_menu_open;
-            }
-            CLAY(CLAY_ID("close_btn"),{
-                .layout = {
-                 .sizing = layoutExpand,
-                 },
-                }){
-             CLAY_TEXT(CLAY_STRING("Close"),{
-                 .fontId = 0,
-                 .fontSize = 14,
-                 .textColor = WHITE 
-                 });
-            }
-            if(Clay_PointerOver(CLAY_ID("close_btn")) && mouse_clicked){
-              editor_close(ed);
-             file_menu_open = !file_menu_open;
-            }
-             // CLAY_TEXT(CLAY_STRING("Open"),{
-             //     .fontId = 0,
-             //     .fontSize = 14,
-             //     .textColor = WHITE
-             //     });
-             // CLAY_TEXT(CLAY_STRING("Save"),{
-             //     .fontId = 0,
-             //     .fontSize = 14,
-             //     .textColor = WHITE 
-             //     });
-           }
+                 .cornerRadius = {5,5,5,5},
+                 .backgroundColor = GRAY5
+               }){
+              CLAY(CLAY_ID("new_btn"),{
+                  .layout = {
+                   .sizing = layoutExpand,
+                   },
+                  }){
+               CLAY_TEXT(CLAY_STRING("New"),{
+                   .fontId = 0,
+                   .fontSize = 14,
+                   .textColor = WHITE 
+                   });
+              }
+              if(Clay_PointerOver(CLAY_ID("new_btn")) && mouse_clicked){
+                editor_new(ed);
+               file_menu_open = !file_menu_open;
+              }
+              CLAY(CLAY_ID("close_btn"),{
+                  .layout = {
+                   .sizing = layoutExpand,
+                   },
+                  }){
+               CLAY_TEXT(CLAY_STRING("Close"),{
+                   .fontId = 0,
+                   .fontSize = 14,
+                   .textColor = WHITE 
+                   });
+              }
+              if(Clay_PointerOver(CLAY_ID("close_btn")) && mouse_clicked){
+                editor_close(ed);
+               file_menu_open = !file_menu_open;
+              }
+               // CLAY_TEXT(CLAY_STRING("Open"),{
+               //     .fontId = 0,
+               //     .fontSize = 14,
+               //     .textColor = WHITE
+               //     });
+               // CLAY_TEXT(CLAY_STRING("Save"),{
+               //     .fontId = 0,
+               //     .fontSize = 14,
+               //     .textColor = WHITE 
+               //     });
+             }
+             if(!(Clay_PointerOver(CLAY_ID("file_btn")))&&mouse_clicked){
+               file_menu_open = false;
+             }
            }
          }
 
