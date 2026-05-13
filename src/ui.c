@@ -280,6 +280,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                 editor_new(ed);
                file_menu_open = !file_menu_open;
               }
+#ifndef __EMSCRIPTEN__
               CLAY(CLAY_ID("open_btn"),{
                   .layout = {
                    .sizing = layoutExpand,
@@ -325,6 +326,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                 SDL_ShowSaveFileDialog(save_file_callback, ed, NULL, NULL, 0, NULL);
                file_menu_open = !file_menu_open;
               }
+#endif
               CLAY(CLAY_ID("close_btn"),{
                   .layout = {
                    .sizing = layoutExpand,

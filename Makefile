@@ -1,2 +1,20 @@
-edim: src/main.c src/editor.c src/ui.c
-	gcc src/main.c src/editor.c src/ui.c -o edim -Wall -Wextra -pedantic -std=c99 -I/opt/homebrew/include -L/opt/homebrew/lib -lSDL3 -lSDL3_ttf
+build: 
+	mkdir -p build
+	cmake -S . -B build/macos
+	cmake --build build/macos
+
+run: build
+	./build/macos/edim
+
+build-web:
+	mkdir -p build
+	source ~/emsdk/emsdk_env.sh
+	emcmake cmake -S . -B build/web
+	cmake --build build/web
+
+run-web: build-web
+	emrun build/web/edim.html
+
+clean: 
+	rm -rf build 
+

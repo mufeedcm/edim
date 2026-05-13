@@ -17,6 +17,10 @@
  */
 
 /* includes */
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif 
+
 #include "editor.h"
 #include "ui.h"
 #include <stdio.h>
@@ -28,38 +32,13 @@
 static const SDL_Color WHITE      = {255,255,255,255};
 static const SDL_Color BLACK      = {30,30,30,255};
 
+int running =1;
 SDL_Window *window;
 SDL_Renderer *renderer;
+Editor ed;
+int width, height;
 
-int main(int argc,char **argv){
-  if(SDL_Init(SDL_INIT_VIDEO) !=0){ 
-    fprintf(stderr,"SDL Init Warning: %s\n",SDL_GetError());
-  }
-  if(TTF_Init()!=0){ 
-    fprintf(stderr,"TTF Init Warning: %s\n",SDL_GetError());
-  }
-  
-  window = SDL_CreateWindow("EDIM", 800, 600, 0);
-  if(!window){
-    fprintf(stderr, "Window Creation Failed : %s\n",SDL_GetError());
-    return 1;
-  }
-  renderer = SDL_CreateRenderer(window, NULL);
-  if(!renderer){
-    fprintf(stderr, "Renderer Creation Failed : %s\n",SDL_GetError());
-    return 1;
-  }
-  ui_init(renderer, 800, 600);
-
-  // SDL_SetWindowResizable(window, true);
-  SDL_StartTextInput(window);
-
-  int width, height;
-  Editor ed;
-  editor_init(&ed);
-  // editor_new(&ed);
-  int running =1;
-  while (running) {
+void main_loop(void){
     SDL_GetWindowSize(window, &width, &height);
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
@@ -101,7 +80,40 @@ int main(int argc,char **argv){
     ui_draw(&ed, renderer, width, height);
   //
     SDL_RenderPresent(renderer);
+}
+
+int main(int argc,char **argv){
+  if(SDL_Init(SDL_INIT_VIDEO) !=0){ 
+    fprintf(stderr,"SDL Init Warning: %s\n",SDL_GetError());
   }
+  if(TTF_Init()!=0){ 
+    fprintf(stderr,"TTF Init Warning: %s\n",SDL_GetError());
+  }
+  
+  window = SDL_CreateWindow("EDIM", 800, 600, 0);
+  if(!window){
+    fprintf(stderr, "Window Creation Failed : %s\n",SDL_GetError());
+    return 1;
+  }
+  renderer = SDL_CreateRenderer(window, NULL);
+  if(!renderer){
+    fprintf(stderr, "Renderer Creation Failed : %s\n",SDL_GetError());
+    return 1;
+  }
+  ui_init(renderer, 800, 600);
+
+  SDL_SetWindowResizable(window, true);
+  SDL_StartTextInput(window);
+
+  editor_init(&ed);
+
+#ifdef __EMSCRIPTEN__
+  emscripten_set_main_loop(main_loop,0,1);
+#else
+  while(running){
+    main_loop();
+  }
+#endif
 
   editor_save(&ed);
   editor_free(&ed);
