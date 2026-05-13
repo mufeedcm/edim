@@ -302,6 +302,25 @@ void editor_save(Editor *ed){
   b->modified = 0;
 }
 
+void editor_save_as(Editor *ed ,const char *path){
+  Buffer *b=editor_current(ed);
+  if(!b) return;
+  if(b->filename){
+    free(b->filename);
+  }
+  b->filename = malloc(strlen(path)+1);
+
+  if(!b->filename){
+    perror("malloc");
+    exit(1);
+  }
+
+  strcpy(b->filename, path);
+
+  b_save(b, b->filename);
+  b->modified = 0;
+}
+
 void editor_close(Editor *ed){
   if(ed->buffer_count<=0) return;
   int curr_idx = ed->current_buffer;
