@@ -3,7 +3,7 @@ project(edim)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-add_executable(edim src/main.c src/editor.c src/ui.c)
+add_executable(edim src/main.c src/editor.c src/ui.c src/app.c)
 
 target_compile_options(edim PRIVATE -Wall -Wextra -pedantic)
 

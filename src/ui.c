@@ -79,6 +79,7 @@ void ui_handle_event(SDL_Event *e){
 }
 
 static void SDLCALL open_file_callback(void *userdata,const char * const *filelist,int filter){
+  (void)filter;
   Editor *ed = userdata;
   if(!filelist || !filelist[0]){
     return; 
@@ -87,6 +88,7 @@ static void SDLCALL open_file_callback(void *userdata,const char * const *fileli
 }
 
 static void SDLCALL save_file_callback(void *userdata,const char * const *filelist,int filter){
+  (void)filter;
   Editor *ed = userdata;
   if(!filelist || !filelist[0]){
     return; 
@@ -167,7 +169,8 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
   }
 }
 
-void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
+UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
+  UiAction action = UI_ACTION_NONE;
   Clay_SetLayoutDimensions((Clay_Dimensions){width,height});
   Clay_PointerData pointer = Clay_GetPointerState();
 
@@ -277,7 +280,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                    });
               }
               if(Clay_PointerOver(CLAY_ID("new_btn")) && mouse_clicked){
-                editor_new(ed);
+                action = UI_ACTION_NEW;
                file_menu_open = !file_menu_open;
               }
 #ifndef __EMSCRIPTEN__
@@ -308,7 +311,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                    });
               }
               if(Clay_PointerOver(CLAY_ID("save_btn")) && mouse_clicked){
-                editor_save(ed);
+                action = UI_ACTION_SAVE;
                file_menu_open = !file_menu_open;
               }
               CLAY(CLAY_ID("saveas_btn"),{
@@ -339,7 +342,7 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
                    });
               }
               if(Clay_PointerOver(CLAY_ID("close_btn")) && mouse_clicked){
-                editor_close(ed);
+                action = UI_ACTION_CLOSE;
                file_menu_open = !file_menu_open;
               }
              }
@@ -431,9 +434,9 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
 
              if(tab_close_clicked){
                editor_switch(ed, i);
-               editor_close(ed);
+               action = UI_ACTION_CLOSE;
                mouse_clicked = false;
-               return;
+               return action;
              }
            }
          }
@@ -492,4 +495,5 @@ void ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
   }
   SDL_Clay_RenderClayCommands(&renderData, &cmds);
   mouse_clicked = false;
+  return action;
 }

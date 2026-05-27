@@ -4,8 +4,15 @@
 #include "editor.h"
 #include <SDL3/SDL.h>
 
+typedef enum{
+  UI_ACTION_NONE,
+  UI_ACTION_NEW,
+  UI_ACTION_SAVE,
+  UI_ACTION_CLOSE,
+}UiAction;
+
 void ui_init(SDL_Renderer *renderer,int width, int height);
 void ui_handle_event(SDL_Event *e);
-void ui_draw(Editor *ed, SDL_Renderer *renderer, int width, int height);
+UiAction ui_draw(Editor *ed, SDL_Renderer *renderer, int width, int height);
 
 #endif
