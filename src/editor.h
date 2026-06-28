@@ -13,6 +13,7 @@ typedef struct{
   char *filename;
   int modified;
   int cursor_pos;
+  int scroll_y;
 }Buffer;
 
 typedef struct{
@@ -42,5 +43,7 @@ int editor_buf_count(Editor *ed);
 int editor_curr_index(Editor *ed);
 const char *editor_buf_name(Editor *ed, int index);
 void editor_switch(Editor *ed, int index);
+int editor_scroll(Editor *ed);
+void editor_scroll_set(Editor *ed,int y);
 
 #endif

@@ -12,7 +12,7 @@ typedef enum{
 }UiAction;
 
 void ui_init(SDL_Renderer *renderer,int width, int height);
-void ui_handle_event(SDL_Event *e);
+void ui_handle_event(Editor *ed,SDL_Event *e);
 UiAction ui_draw(Editor *ed, SDL_Renderer *renderer, int width, int height);
 
 #endif

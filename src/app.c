@@ -45,7 +45,7 @@ static void app_handle_event(App *app, SDL_Event *e){
         app->running =false;
         return;
       }
-      ui_handle_event(e);
+      ui_handle_event(&app->ed,e);
 
       if(e->type == SDL_EVENT_KEY_DOWN){
         app_handle_key_event(app,&e->key);

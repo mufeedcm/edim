@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "editor.h"
+#include <SDL3/SDL_render.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -33,9 +34,9 @@ static Clay_Dimensions measure_text(Clay_StringSlice text,Clay_TextElementConfig
   return (Clay_Dimensions){(float)w,(float)h};
 }
 
-static int editor_scroll_y=0;
 static bool mouse_clicked = false;
 static bool file_menu_open = false;
+static int prev_cur_pos = -1;
 
 
 void ui_init(SDL_Renderer *renderer, int width, int height){
@@ -58,7 +59,7 @@ void ui_init(SDL_Renderer *renderer, int width, int height){
   Clay_SetMeasureTextFunction(measure_text,font);
 };
 
-void ui_handle_event(SDL_Event *e){
+void ui_handle_event(Editor *ed,SDL_Event *e){
   switch ( e->type) {
     case SDL_EVENT_MOUSE_MOTION:
       Clay_SetPointerState((Clay_Vector2){e->motion.x,e->motion.y}, e->motion.state & SDL_BUTTON_LMASK);
@@ -72,8 +73,7 @@ void ui_handle_event(SDL_Event *e){
       break;
     case SDL_EVENT_MOUSE_WHEEL:
       Clay_UpdateScrollContainers(true,(Clay_Vector2){e->wheel.x,e->wheel.y}, 0.01f);
-      editor_scroll_y -= e->wheel.y *20;
-      if(editor_scroll_y <0) editor_scroll_y =0;
+      editor_scroll_set(ed, editor_scroll(ed) - e->wheel.y *20);
       break;
   }
 }
@@ -96,76 +96,115 @@ static void SDLCALL save_file_callback(void *userdata,const char * const *fileli
   editor_save_as(ed, filelist[0]);
 }
 
-void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,int width, int height){
-  if(ed->buffer_count!=0){
-  int char_w = 10,char_h = 18;
-  int margin =10;
+void draw_line_number(SDL_Renderer *renderer, int x, int y, int line){
 
-  int gutter = 30;
-  int line =1;
-
-  int len= editor_length(ed);
-  int col=0;
-  int max_cols = (width/char_w)-5;
-  int x = x_offset+gutter+margin,y=(y_offset+margin)-editor_scroll_y;
-  int cx=x_offset+gutter+margin,cy=(y_offset+margin)-editor_scroll_y;
-  int cursor = editor_cursor(ed);
-  SDL_SetRenderClipRect(renderer,&(SDL_Rect){x_offset,y_offset,width,height});
-  
   char num[16];
   snprintf(num, sizeof(num),"%d",line);
   SDL_Surface *line_surface = TTF_RenderText_Blended(font, num,strlen(num), (SDL_Color){GRAY5.r,GRAY5.g,GRAY5.b,GRAY5.a});
   SDL_Texture *line_texture = SDL_CreateTextureFromSurface(renderer, line_surface);
-  SDL_FRect line_dst = {x_offset+5,y,line_surface->w,line_surface->h};
+  SDL_FRect line_dst = {x,y,line_surface->w,line_surface->h};
   SDL_DestroySurface(line_surface);
   SDL_RenderTexture(renderer, line_texture, NULL, &line_dst);
   SDL_DestroyTexture(line_texture);
 
-    for(int i=0;i<len;i++){
-      char c = editor_get(ed, i);
+}
 
-      if(i==cursor){
-        cx=x;
-        cy=y;
+void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,int width, int height){
+  if(ed->buffer_count!=0){
+  int char_w = 10;
+  int char_h = 18;
+
+  int margin =10;
+  int gutter_w = 30;
+
+  int text_len= editor_length(ed);
+  int cur_pos = editor_cursor(ed);
+
+  int row_count = 1;
+  int line_no =1;
+  int col = 0;
+  int max_cols = (width/char_w)-5;
+
+  int current_scroll = editor_scroll(ed);
+  int text_start_x = x_offset+gutter_w+margin;
+  int text_start_y = (y_offset+margin)- current_scroll;
+
+  int x = text_start_x; // x position
+  int y = text_start_y; // y position
+
+  int cur_x = text_start_x; //cursor x
+  int cur_y = text_start_y; //cursor y
+
+  SDL_SetRenderClipRect(renderer,&(SDL_Rect){x_offset,y_offset,width,height});
+  
+  draw_line_number(renderer, x_offset+5, y, line_no);
+
+  for(int i=0;i<text_len;i++){
+    char c = editor_get(ed, i);
+
+    if(i==cur_pos){
+      cur_x = x;
+      cur_y = y;
+    }
+    if(c =='\n'||col>=max_cols){
+      row_count++;
+      y+=char_h;
+      x = text_start_x;
+      col =0;
+      if(c=='\n'){
+        line_no++;
+        draw_line_number(renderer, x_offset+5, y, line_no);
       }
-      if(c =='\n'||col>=max_cols){
-        y+=char_h;
-        x = x_offset+gutter+margin;
-        col =0;
-        if(c=='\n'){
-          line++;
-          char num[16];
-          snprintf(num, sizeof(num),"%d",line);
-          SDL_Surface *line_surface = TTF_RenderText_Blended(font, num,strlen(num), (SDL_Color){GRAY5.r,GRAY5.g,GRAY5.b,GRAY5.a});
-          SDL_Texture *line_texture = SDL_CreateTextureFromSurface(renderer, line_surface);
-          SDL_FRect line_dst = {x_offset+5,y,line_surface->w,line_surface->h};
-          SDL_DestroySurface(line_surface);
-          SDL_RenderTexture(renderer, line_texture, NULL, &line_dst);
-          SDL_DestroyTexture(line_texture);
-        }
-        if(c == '\n') continue;
-      }
-      char str[2] = {c,'\0'};
-      SDL_Surface *surface = TTF_RenderText_Blended(font, str,strlen(str), (SDL_Color){WHITE.r,WHITE.g,WHITE.b,WHITE.a});
-      SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-      SDL_FRect dst = {x,y,surface->w,surface->h};
-      SDL_DestroySurface(surface);
-      SDL_RenderTexture(renderer, texture, NULL, &dst);
-      SDL_DestroyTexture(texture);
-      x+=char_w;
-      col++;
+      if(c == '\n') continue;
     }
-    if(cursor==len){
-      cx=x;
-      cy=y;
+    char str[2] = {c,'\0'};
+    SDL_Surface *surface = TTF_RenderText_Blended(font, str,strlen(str), (SDL_Color){WHITE.r,WHITE.g,WHITE.b,WHITE.a});
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FRect dst = {x,y,surface->w,surface->h};
+    SDL_DestroySurface(surface);
+    SDL_RenderTexture(renderer, texture, NULL, &dst);
+    SDL_DestroyTexture(texture);
+    x+=char_w;
+    col++;
+  }
+
+  if(cur_pos==text_len){
+    cur_x=x;
+    cur_y=y;
+  }
+
+  int top_bound = y_offset + margin;
+  int bottom_bound = y_offset +height - margin;
+  if(cur_pos != prev_cur_pos){
+    if(cur_y<top_bound){
+      current_scroll -=(top_bound - cur_y);
     }
-    bool showCursor = (SDL_GetTicks() / 300) % 2;
-    if(showCursor){
-      SDL_FRect cur = {cx,cy,2,char_h};
-      SDL_SetRenderDrawColor(renderer, WHITE.r,WHITE.g,WHITE.b,WHITE.a);
-      SDL_RenderFillRect(renderer, &cur);
+    if(cur_y +char_h >bottom_bound){
+      current_scroll += (cur_y+char_h)-bottom_bound;
     }
-    SDL_SetRenderClipRect(renderer, NULL);
+    editor_scroll_set(ed, current_scroll);
+    prev_cur_pos = cur_pos;
+  }
+
+
+  // scroll limit
+  int content_h = row_count * char_h + margin * 2;
+  int max_scroll = content_h - height;
+
+  if(max_scroll<0) max_scroll = 0; 
+  if(current_scroll > max_scroll){
+    current_scroll = max_scroll;
+    editor_scroll_set(ed, current_scroll);
+  }
+  
+
+  bool showCursor = (SDL_GetTicks() / 300) % 2;
+  if(showCursor){
+    SDL_FRect cur = {cur_x,cur_y,2,char_h};
+    SDL_SetRenderDrawColor(renderer, WHITE.r,WHITE.g,WHITE.b,WHITE.a);
+    SDL_RenderFillRect(renderer, &cur);
+  }
+  SDL_SetRenderClipRect(renderer, NULL);
   }
 }
 

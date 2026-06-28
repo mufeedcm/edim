@@ -90,6 +90,7 @@ void b_init(Buffer *b,int capacity){
   b->filename = NULL;
   b->modified = 0;
   b->cursor_pos =0;
+  b->scroll_y = 0;
 }
 
 void b_free(Buffer *b){
@@ -386,3 +387,17 @@ void editor_switch(Editor *ed, int index){
     ed->current_buffer = index;
   }
 }
+
+int editor_scroll(Editor *ed){
+  Buffer *b = editor_current(ed);
+  return b ? b->scroll_y : 0;
+}
+
+void editor_scroll_set(Editor *ed,int y){
+  Buffer *b = editor_current(ed);
+  if(b){
+    b->scroll_y = y;
+    if (b->scroll_y < 0) b->scroll_y = 0;
+  }
+}
+
