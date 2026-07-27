@@ -1,13 +1,19 @@
+all: clean run-dev
 
-all: clean build
-
-build: 
+build-dev: 
 	mkdir -p build
-	cmake -S . -B build/macos
-	cmake --build build/macos
+	cmake -S . -B build/desktop -DUSE_VENDORED=OFF
+	cmake --build build/desktop
 
-run: build
-	./build/macos/edim
+run-dev: build-dev
+	./build/desktop/edim
+
+
+package: 
+	mkdir -p build
+	cmake -S . -B build/release -DUSE_VENDORED=ON
+	cmake --build build/release
+	cd build/release && cpack
 
 build-web:
 	mkdir -p build

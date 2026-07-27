@@ -34,13 +34,26 @@ static Clay_Dimensions measure_text(Clay_StringSlice text,Clay_TextElementConfig
   return (Clay_Dimensions){(float)w,(float)h};
 }
 
+
 static bool mouse_clicked = false;
 static bool file_menu_open = false;
 static int prev_cur_pos = -1;
 
+const char *getAssetPath(const char *file){
+  static char path[1024];
+
+  char *base = SDL_GetBasePath();
+  if(base){
+    snprintf(path, sizeof(path), "%s%s",base,file);
+    SDL_free(base);
+  }else{
+    snprintf(path, sizeof(path),"%s",file);
+  }
+  return  path;
+}
 
 void ui_init(SDL_Renderer *renderer, int width, int height){
-  font = TTF_OpenFont("assets/fonts/JetBrainsMono-Regular.ttf", 14);
+  font = TTF_OpenFont(getAssetPath("assets/fonts/JetBrainsMono-Regular.ttf"), 14);
 
   renderData.renderer = renderer;
   renderData.textEngine = TTF_CreateRendererTextEngine(renderer);
