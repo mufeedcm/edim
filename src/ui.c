@@ -1,7 +1,9 @@
 #include "ui.h"
 #include "editor.h"
 #include <SDL3/SDL_render.h>
+#include <SDL3/SDL_surface.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +16,9 @@
 
 static Clay_SDL3RendererData renderData;
 static TTF_Font *font;
+static SDL_Texture *glyph_cache[128] = {NULL};
+static int glyph_width[128] = {0};
+static int glyph_height[128] = {0};
 
 static const Clay_Color WHITE      = (Clay_Color) {255,255,255,255};
 static const Clay_Color PURE_BLACK = (Clay_Color) {0,0,0,255};
@@ -55,6 +60,18 @@ const char *getAssetPath(const char *file){
 void ui_init(SDL_Renderer *renderer, int width, int height){
   font = TTF_OpenFont(getAssetPath("assets/fonts/JetBrainsMono-Regular.ttf"), 14);
 
+  for(int i = 32; i<127;i++){
+    char str[2] = {(char)i,'\0'};
+    SDL_Surface *surface = TTF_RenderText_Blended(font, str,strlen(str), (SDL_Color){WHITE.r,WHITE.g,WHITE.b,WHITE.a});
+    if(surface){
+      glyph_cache[i] = SDL_CreateTextureFromSurface(renderer, surface);
+      glyph_width[i] = surface->w;
+      glyph_height[i] = surface->h;
+      SDL_DestroySurface(surface);
+    }
+  }
+
+
   renderData.renderer = renderer;
   renderData.textEngine = TTF_CreateRendererTextEngine(renderer);
 
@@ -93,16 +110,17 @@ void ui_handle_event(Editor *ed,SDL_Event *e){
 
 
 void draw_line_number(SDL_Renderer *renderer, int x, int y, int line){
-
   char num[16];
   snprintf(num, sizeof(num),"%d",line);
-  SDL_Surface *line_surface = TTF_RenderText_Blended(font, num,strlen(num), (SDL_Color){GRAY5.r,GRAY5.g,GRAY5.b,GRAY5.a});
-  SDL_Texture *line_texture = SDL_CreateTextureFromSurface(renderer, line_surface);
-  SDL_FRect line_dst = {x,y,line_surface->w,line_surface->h};
-  SDL_DestroySurface(line_surface);
-  SDL_RenderTexture(renderer, line_texture, NULL, &line_dst);
-  SDL_DestroyTexture(line_texture);
-
+  for (int i = 0; num[i] != '\0'; i++) {
+    unsigned char uc = (unsigned char)num[i];
+    if(glyph_cache[uc]){
+      SDL_FRect line_dst = {x+i*10, y,(float)glyph_width[uc],(float)glyph_height[uc]};
+      SDL_SetTextureColorMod(glyph_cache[uc], GRAY5.r, GRAY5.g, GRAY5.b);
+      SDL_RenderTexture(renderer,glyph_cache[uc],NULL,&line_dst);
+      SDL_SetTextureColorMod(glyph_cache[uc], WHITE.r, WHITE.g, WHITE.b);
+    }
+  }
 }
 
 void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,int width, int height,Uint64 last_input_time){
@@ -153,13 +171,13 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
       }
       if(c == '\n') continue;
     }
-    char str[2] = {c,'\0'};
-    SDL_Surface *surface = TTF_RenderText_Blended(font, str,strlen(str), (SDL_Color){WHITE.r,WHITE.g,WHITE.b,WHITE.a});
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_FRect dst = {x,y,surface->w,surface->h};
-    SDL_DestroySurface(surface);
-    SDL_RenderTexture(renderer, texture, NULL, &dst);
-    SDL_DestroyTexture(texture);
+
+    unsigned char uc = (unsigned char)c;
+    if(uc >=32 && uc < 127 && glyph_cache[uc]){
+      SDL_FRect dst = {x,y,(float)glyph_width[uc],(float)glyph_height[uc]};
+      SDL_RenderTexture(renderer, glyph_cache[uc], NULL, &dst);
+    }
+
     x+=char_w;
     col++;
   }
@@ -536,4 +554,13 @@ Action ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint64 
   SDL_Clay_RenderClayCommands(&renderData, &cmds);
   mouse_clicked = false;
   return action;
+}
+
+void ui_destroy(void){
+  for(int i =32;i<127;i++){
+    if(glyph_cache[i]){
+      SDL_DestroyTexture(glyph_cache[i]);
+      glyph_cache[i] = NULL;
+    }
+  }
 }

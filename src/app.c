@@ -182,6 +182,7 @@ void app_destroy(App *app){
   editor_save(&app->ed);
   editor_free(&app->ed);
   SDL_StopTextInput(app->window);
+  ui_destroy();
   if (app->renderer) {
   SDL_DestroyRenderer(app->renderer);
   }

@@ -31,10 +31,11 @@ the output will be available at build/release/
 ---
 ### Todo
 
-- fix resourse intensive text rendering.
+- add viewport culling.
 - add tab scrolling.
 - add confirmation popup.
 - add text selection
 - add file reloading 
 - add text copying.
 - add vim bindings.
+- implement file open/save for web.
