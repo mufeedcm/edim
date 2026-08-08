@@ -31,7 +31,6 @@ the output will be available at build/release/
 ---
 ### Todo
 
-- fix line number width
 - add tab scrolling.
 - add confirmation popup.
 - add text selection

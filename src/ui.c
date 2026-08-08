@@ -126,9 +126,8 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
   if(ed->buffer_count!=0){
   int char_w = 10;
   int char_h = 18;
-
   int margin =10;
-  int gutter_w = 30;
+
 
   int text_len= editor_length(ed);
   int cur_pos = editor_cursor(ed);
@@ -137,6 +136,8 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
   int line_no =1;
   int col = 0;
   int max_cols = (width/char_w)-5;
+
+  int gutter_w = (text_len < 3000) ? 30 : (text_len < 30000) ? 40 : 50;
 
   int current_scroll = editor_scroll(ed);
   int text_start_x = x_offset+gutter_w+margin;
