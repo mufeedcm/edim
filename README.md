@@ -31,11 +31,8 @@ the output will be available at build/release/
 ---
 ### Todo
 
-- [x] add open,save,saveas
-- [x] package for macos/windows/linux
-- [x] add auto scrolling and scroll limit
-- [x] fix filenames
-- [ ] fix resourse intensive text rendering
-- [ ] add keybard shortcuts
-- [ ] add vim mode support
-- [ ] add tab scrolling
+- fix filename for default saving.
+- add copy and paste.
+- fix resourse intensive text rendering.
+- add vim mode support.
+- add tab scrolling.

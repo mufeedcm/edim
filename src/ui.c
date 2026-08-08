@@ -91,23 +91,6 @@ void ui_handle_event(Editor *ed,SDL_Event *e){
   }
 }
 
-static void SDLCALL open_file_callback(void *userdata,const char * const *filelist,int filter){
-  (void)filter;
-  Editor *ed = userdata;
-  if(!filelist || !filelist[0]){
-    return; 
-  }
-  editor_open(ed, filelist[0]);
-}
-
-static void SDLCALL save_file_callback(void *userdata,const char * const *filelist,int filter){
-  (void)filter;
-  Editor *ed = userdata;
-  if(!filelist || !filelist[0]){
-    return; 
-  }
-  editor_save_as(ed, filelist[0]);
-}
 
 void draw_line_number(SDL_Renderer *renderer, int x, int y, int line){
 
@@ -221,8 +204,8 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
   }
 }
 
-UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint64 last_input_time){
-  UiAction action = UI_ACTION_NONE;
+Action ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint64 last_input_time){
+  Action action = ACTION_NONE;
   Clay_SetLayoutDimensions((Clay_Dimensions){width,height});
   Clay_PointerData pointer = Clay_GetPointerState();
 
@@ -332,7 +315,7 @@ UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint6
                    });
               }
               if(Clay_PointerOver(CLAY_ID("new_btn")) && mouse_clicked){
-                action = UI_ACTION_NEW;
+                action = ACTION_NEW;
                file_menu_open = !file_menu_open;
               }
 #ifndef __EMSCRIPTEN__
@@ -348,7 +331,7 @@ UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint6
                    });
               }
               if(Clay_PointerOver(CLAY_ID("open_btn")) && mouse_clicked){
-                SDL_ShowOpenFileDialog(open_file_callback, ed, NULL, NULL, 0, NULL, false);
+                action = ACTION_OPEN;
                file_menu_open = !file_menu_open;
               }
               CLAY(CLAY_ID("save_btn"),{
@@ -363,7 +346,7 @@ UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint6
                    });
               }
               if(Clay_PointerOver(CLAY_ID("save_btn")) && mouse_clicked){
-                action = UI_ACTION_SAVE;
+                action = ACTION_SAVE;
                file_menu_open = !file_menu_open;
               }
               CLAY(CLAY_ID("saveas_btn"),{
@@ -378,7 +361,7 @@ UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint6
                    });
               }
               if(Clay_PointerOver(CLAY_ID("saveas_btn")) && mouse_clicked){
-                SDL_ShowSaveFileDialog(save_file_callback, ed, NULL, NULL, 0, NULL);
+                action = ACTION_SAVE_AS;
                file_menu_open = !file_menu_open;
               }
 #endif
@@ -394,7 +377,7 @@ UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint6
                    });
               }
               if(Clay_PointerOver(CLAY_ID("close_btn")) && mouse_clicked){
-                action = UI_ACTION_CLOSE;
+                action = ACTION_CLOSE;
                file_menu_open = !file_menu_open;
               }
              }
@@ -490,7 +473,7 @@ UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint6
 
              if(tab_close_clicked){
                editor_switch(ed, i);
-               action = UI_ACTION_CLOSE;
+               action = ACTION_CLOSE;
                mouse_clicked = false;
                return action;
              }
