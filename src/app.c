@@ -1,7 +1,9 @@
 #include "app.h"
 #include "editor.h"
 #include "ui.h"
+#include <SDL3/SDL_clipboard.h>
 #include <SDL3/SDL_keycode.h>
+#include <SDL3/SDL_stdinc.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -53,6 +55,15 @@ static void app_execute_action(App *app, Action action){
 #endif
     break;
     case ACTION_CLOSE: editor_close(&app->ed); break;
+    case ACTION_PASTE:
+     if(SDL_HasClipboardText()){
+       char *text = SDL_GetClipboardText();
+       if(text){
+         editor_insert_str(&app->ed, text);
+         SDL_free(text);
+       }
+     }
+     break;
     case ACTION_NONE: break;
   }
 
@@ -75,6 +86,7 @@ static void app_handle_event(App *app, SDL_Event *e){
         case SDLK_O: app_execute_action(app, ACTION_OPEN); break;
         case SDLK_S: app_execute_action(app, shift? ACTION_SAVE_AS : ACTION_SAVE); break;
         case SDLK_W: app_execute_action(app, ACTION_CLOSE); break;
+        case SDLK_V: app_execute_action(app, ACTION_PASTE); break;
       }
       return;
     }

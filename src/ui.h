@@ -11,6 +11,7 @@ typedef enum{
   ACTION_SAVE,
   ACTION_SAVE_AS,
   ACTION_CLOSE,
+  ACTION_PASTE,
 }Action;
 
 void ui_init(SDL_Renderer *renderer,int width, int height);

@@ -31,7 +31,10 @@ the output will be available at build/release/
 ---
 ### Todo
 
-- add copy and paste.
 - fix resourse intensive text rendering.
-- add vim mode support.
 - add tab scrolling.
+- add confirmation popup.
+- add text selection
+- add file reloading 
+- add text copying.
+- add vim bindings.
