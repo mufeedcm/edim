@@ -422,8 +422,12 @@ UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint6
        })
        {
          for ( int i =0;i<editor_buf_count(ed);i++){
-           Clay_Color bg = ( i == editor_curr_index(ed)) ? GRAY4 : GRAY2;
-          const char *name = editor_buf_name(ed,i);
+          Clay_Color bg = ( i == editor_curr_index(ed)) ? GRAY4 : GRAY2;
+          const char *full_path = editor_buf_name(ed,i);
+          const char *name = strrchr(full_path, '/');
+          if(name) name++;
+          else name = full_path;
+
            CLAY(CLAY_IDI("tab",i),{
                .layout = {
                .layoutDirection = CLAY_LEFT_TO_RIGHT,
