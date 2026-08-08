@@ -12,6 +12,7 @@ typedef struct {
   Editor ed;
   int width;
   int height;
+  Uint64 last_input_time;
 }App;
 
 void app_loop(App *app);

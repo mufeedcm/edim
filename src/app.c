@@ -54,6 +54,7 @@ static void app_handle_event(App *app, SDL_Event *e){
 
       if(e->type == SDL_EVENT_TEXT_INPUT){
         editor_insert_str(&app->ed, (char*)e->text.text);
+        app->last_input_time = SDL_GetTicks();
         return;
       }
 }
@@ -77,7 +78,7 @@ static void app_handle_ui_actions(App *app, UiAction action){
 static void app_render(App *app){
     SDL_SetRenderDrawColor(app->renderer, BLACK.r, BLACK.g, BLACK.b, BLACK.a);
     SDL_RenderClear(app->renderer);
-    UiAction action = ui_draw(&app->ed, app->renderer, app->width, app->height);
+    UiAction action = ui_draw(&app->ed, app->renderer, app->width, app->height, app->last_input_time);
     app_handle_ui_actions(app, action);
     SDL_RenderPresent(app->renderer);
 }

@@ -122,7 +122,7 @@ void draw_line_number(SDL_Renderer *renderer, int x, int y, int line){
 
 }
 
-void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,int width, int height){
+void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,int width, int height,Uint64 last_input_time){
   if(ed->buffer_count!=0){
   int char_w = 10;
   int char_h = 18;
@@ -211,7 +211,7 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
   }
   
 
-  bool showCursor = (SDL_GetTicks() / 300) % 2;
+  bool showCursor = (SDL_GetTicks() - last_input_time < 500) ? true : (SDL_GetTicks() / 300) % 2;
   if(showCursor){
     SDL_FRect cur = {cur_x,cur_y,2,char_h};
     SDL_SetRenderDrawColor(renderer, WHITE.r,WHITE.g,WHITE.b,WHITE.a);
@@ -221,7 +221,7 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
   }
 }
 
-UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
+UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint64 last_input_time){
   UiAction action = UI_ACTION_NONE;
   Clay_SetLayoutDimensions((Clay_Dimensions){width,height});
   Clay_PointerData pointer = Clay_GetPointerState();
@@ -542,7 +542,8 @@ UiAction ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height){
         (int)editor_box.x,
         (int)editor_box.y,
         (int)editor_box.width,
-        (int)editor_box.height
+        (int)editor_box.height,
+        last_input_time
     );
   }
   SDL_Clay_RenderClayCommands(&renderData, &cmds);
