@@ -40,7 +40,13 @@ static void app_execute_action(App *app, Action action){
     SDL_ShowOpenFileDialog(open_file_callback, &app->ed, NULL, NULL, 0, NULL, false);
 #endif
     break;
-    case ACTION_SAVE: editor_save(&app->ed); break;
+    case ACTION_SAVE: 
+    if(has_filename(&app->ed)){
+      editor_save(&app->ed);
+    }else{
+      app_execute_action(app,ACTION_SAVE_AS);
+    }
+    break;
     case ACTION_SAVE_AS:
 #ifndef __EMSCRIPTEN__
     SDL_ShowSaveFileDialog(save_file_callback, &app->ed, NULL, NULL, 0, NULL);

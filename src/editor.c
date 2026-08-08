@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 // GapBuffer
 void gb_init(GapBuffer *gb,int capacity){
@@ -300,13 +301,14 @@ void editor_move_down(Editor *ed){
   b_move_down(b);
 }
 
+bool has_filename(Editor *ed){
+  Buffer *b=editor_current(ed);
+  return (b&&b->filename !=NULL);
+}
+
 void editor_save(Editor *ed){
   Buffer *b=editor_current(ed);
-  if(!b) return;
-  if(!b->filename){
-    b->filename = malloc(strlen("out.txt")+1);
-    strcpy(b->filename, "out.txt");
-  }
+  if(!b || !b->filename) return;
   b_save(b, b->filename);
   b->modified = 0;
 }

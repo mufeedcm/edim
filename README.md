@@ -31,7 +31,6 @@ the output will be available at build/release/
 ---
 ### Todo
 
-- fix filename for default saving.
 - add copy and paste.
 - fix resourse intensive text rendering.
 - add vim mode support.

@@ -1,6 +1,8 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+#include <stdbool.h>
+
 typedef struct{
   char *data;
   int gap_start;
@@ -32,6 +34,7 @@ void editor_move_left(Editor *ed);
 void editor_move_right(Editor *ed);
 void editor_move_up(Editor *ed);
 void editor_move_down(Editor *ed);
+bool has_filename(Editor *ed);
 void editor_save(Editor *ed);
 void editor_save_as(Editor *ed ,const char *path);
 void editor_close(Editor *ed);
