@@ -10,6 +10,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+#ifndef EDIM_VERSION
+#define EDIM_VERSION "0.1.0"
+#endif
+
 #define CLAY_IMPLEMENTATION
 #include "clay/clay.h"
 #include "clay/clay_renderer_SDL3.c"
@@ -542,6 +546,17 @@ Action ui_draw(Editor *ed,SDL_Renderer *renderer, int width , int height,Uint64 
                    .fontSize = 14,
                    .textColor = WHITE 
                    });
+               CLAY(CLAY_ID("v"),{
+                   .layout={
+                     .padding = {.top = 10},
+                   }
+              }){
+               CLAY_TEXT(CLAY_STRING("v"EDIM_VERSION),{
+                   .fontId = 0,
+                   .fontSize = 14,
+                   .textColor = GRAY5 
+                   });
+               }
            }
          }
        }

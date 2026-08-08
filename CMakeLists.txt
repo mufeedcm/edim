@@ -12,6 +12,7 @@ set(SRC_FILES
 
 add_executable(edim ${SRC_FILES} )
 target_compile_options(edim PRIVATE -Wall -Wextra -pedantic)
+target_compile_definitions(edim PRIVATE EDIM_VERSION=\"${PROJECT_VERSION}\")
 
 if(EMSCRIPTEN)
   set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
@@ -23,7 +24,7 @@ if(EMSCRIPTEN)
 
   target_link_options(edim PRIVATE 
     "--preload-file" "${CMAKE_SOURCE_DIR}/assets@assets"
-    "-sAllow_MEMORY_GROWTH=1"
+    "-sALLOW_MEMORY_GROWTH=1"
   )
 else()
   option(USE_VENDORED "Build dependencies from source" OFF)
