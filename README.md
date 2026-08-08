@@ -34,8 +34,8 @@ the output will be available at build/release/
 - [x] add open,save,saveas
 - [x] package for macos/windows/linux
 - [x] add auto scrolling and scroll limit
-- [ ] add keybard shortcuts
-- [ ] fix filenames
-- [ ] add vim mode support
+- [x] fix filenames
 - [ ] fix resourse intensive text rendering
+- [ ] add keybard shortcuts
+- [ ] add vim mode support
 - [ ] add tab scrolling

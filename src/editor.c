@@ -237,6 +237,14 @@ void editor_new(Editor *ed){
 }
 
 void editor_open(Editor *ed,const char *path){
+  //switch to existing tab if it already exists.
+  for(int i=0; i < ed->buffer_count;i++){ 
+    if(ed->buffers[i].filename && strcmp(ed->buffers[i].filename,path)==0){
+      ed->current_buffer = i; 
+      return;
+    }
+  }
+
   Buffer *new_buffers = realloc(ed->buffers, sizeof(Buffer)*(ed->buffer_count+1));
   if(!new_buffers){
     perror("realloc");
