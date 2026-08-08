@@ -71,7 +71,6 @@ void ui_init(SDL_Renderer *renderer, int width, int height){
     }
   }
 
-
   renderData.renderer = renderer;
   renderData.textEngine = TTF_CreateRendererTextEngine(renderer);
 
@@ -149,12 +148,18 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
   int cur_x = text_start_x; //cursor x
   int cur_y = text_start_y; //cursor y
 
+  int top_bound = y_offset + margin;
+  int bottom_bound = y_offset +height - margin;
+
+
   SDL_SetRenderClipRect(renderer,&(SDL_Rect){x_offset,y_offset,width,height});
   
   draw_line_number(renderer, x_offset+5, y, line_no);
 
   for(int i=0;i<text_len;i++){
     char c = editor_get(ed, i);
+
+    bool is_visible = (y + char_h >=top_bound) && (y<=bottom_bound);
 
     if(i==cur_pos){
       cur_x = x;
@@ -167,15 +172,19 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
       col =0;
       if(c=='\n'){
         line_no++;
-        draw_line_number(renderer, x_offset+5, y, line_no);
+        if(is_visible){
+          draw_line_number(renderer, x_offset+5, y, line_no);
+        }
       }
       if(c == '\n') continue;
     }
 
-    unsigned char uc = (unsigned char)c;
-    if(uc >=32 && uc < 127 && glyph_cache[uc]){
-      SDL_FRect dst = {x,y,(float)glyph_width[uc],(float)glyph_height[uc]};
-      SDL_RenderTexture(renderer, glyph_cache[uc], NULL, &dst);
+    if(is_visible){
+      unsigned char uc = (unsigned char)c;
+      if(uc >=32 && uc < 127 && glyph_cache[uc]){
+        SDL_FRect dst = {x,y,(float)glyph_width[uc],(float)glyph_height[uc]};
+        SDL_RenderTexture(renderer, glyph_cache[uc], NULL, &dst);
+      }
     }
 
     x+=char_w;
@@ -187,8 +196,6 @@ void draw_editor(SDL_Renderer *renderer,Editor *ed,int x_offset, int y_offset,in
     cur_y=y;
   }
 
-  int top_bound = y_offset + margin;
-  int bottom_bound = y_offset +height - margin;
   if(cur_pos != prev_cur_pos){
     if(cur_y<top_bound){
       current_scroll -=(top_bound - cur_y);

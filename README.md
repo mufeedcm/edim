@@ -31,7 +31,7 @@ the output will be available at build/release/
 ---
 ### Todo
 
-- add viewport culling.
+- fix line number width
 - add tab scrolling.
 - add confirmation popup.
 - add text selection
