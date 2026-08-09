@@ -28,10 +28,15 @@ if(EMSCRIPTEN)
   )
 else()
   option(USE_VENDORED "Build dependencies from source" OFF)
+  if(APPLE)
+    set(ASSET_DEST_DIR $<TARGET_FILE_DIR:edim>/../Resources/assets)
+  else()
+    set(ASSET_DEST_DIR $<TARGET_FILE_DIR:edim>/assets)
+  endif()
   add_custom_target(copy_assets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets
-    $<TARGET_FILE_DIR:edim>/assets
+    ${ASSET_DEST_DIR}
   )
 
   if(USE_VENDORED)

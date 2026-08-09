@@ -6,8 +6,11 @@ build-dev:
 	cmake --build build/desktop
 
 run-dev: build-dev
-	./build/desktop/edim
-
+	@if [ -d "build/desktop/edim.app" ]; then \
+		open ./build/desktop/edim.app; \
+	else \
+	./build/desktop/edim; \
+	fi
 
 package: 
 	mkdir -p build
@@ -27,3 +30,4 @@ run-web: build-web
 clean: 
 	rm -rf build 
 
+.PHONY: all build-dev run-dev package build-web run-web clean

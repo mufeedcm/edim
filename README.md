@@ -12,6 +12,9 @@ This project is currently in early development.
 ### Installation
 pre-compiled and packaged releases for mac (dmg) / windows (exe) /linux (.tar.gz) can be downloaded directly from **[Releases](https://github.com/mufeedcm/edim/releases)**
 
+> [!Note]
+macos users might have to run `xattr -cr /Applications/EDIM.app` in the terminal to bypass gatekeeper ( got no money to buy apple dev license)
+
 ---
 
 ### Build
